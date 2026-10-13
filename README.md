@@ -12,16 +12,16 @@ This repo explains how it works for a 15-year-old, then lets them build one.
 
 | File | What it is |
 |---|---|
-| `index.html` | Six short animated episodes (canvas, no dependencies) with captions and optional narration |
+| `index.html` | Six short animated episodes (canvas, no dependencies) with captions, optional narration, a 3-question quiz per episode, saved progress, and a hands-on Filter Lab |
 | `build_your_own_alexnet.ipynb` | Episode 7: a hands-on PyTorch notebook for Google Colab's free GPU |
 
 ## The notebook (about 15 minutes on a free T4 GPU)
 
-1. **Meet the real AlexNet:** load the pretrained model, classify your own photos, and view the 64 filters it learned.
+1. **Meet the real AlexNet:** load the pretrained model, classify your own photos, slide your own 3×3 filter over a photo, and view the 64 filters it learned.
 2. **Build TinyAlexNet from scratch:** 5 conv + 3 dense layers, ReLU, dropout and data augmentation, trained on CIFAR-10.
 3. **Real-world project, Pet Breed Detector:** transfer learning on the Oxford-IIIT Pet dataset (37 breeds), launched as a Gradio web app with a shareable link.
 
-Then come challenges: SGD vs AdamW, removing tricks to see overfitting, fine-tuning, ResNet-18, and training on your own photos.
+Each part has "Predict first" prompts and ends with a "Check yourself" quiz. Then come challenges: SGD vs AdamW, removing tricks to see overfitting, fine-tuning, ResNet-18, and training on your own photos.
 
 ## Run it
 

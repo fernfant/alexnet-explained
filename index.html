@@ -95,13 +95,48 @@ code{font-family:var(--f-mono);font-size:.9em}
 .btn-ghost{border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 .btn-cta:focus-visible,.btn-ghost:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .foot{color:var(--muted);font-size:13px;margin:0}
+
+.prog{font:500 13px var(--f-mono);color:var(--muted);margin:10px 0 0}
+.prog b{color:var(--accent)}
+.ep .d{font:600 11px var(--f-mono);color:var(--accent);min-height:1em}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:grid;gap:14px;min-width:0;scroll-margin-top:16px}
+.panel header{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px}
+.panel h2{font-family:var(--f-display);font-weight:800;font-size:1.3rem;margin:0}
+.panel .sub{color:var(--muted);margin:0;max-width:72ch}
+.score{margin-left:auto;font:600 13px var(--f-mono);color:var(--muted)}
+.qs{display:grid;gap:14px;margin:0;padding:0;list-style:none}
+.q fieldset{border:0;margin:0;padding:0;display:grid;gap:6px;min-width:0}
+.q legend{font-weight:700;padding:0;margin-bottom:6px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+.opt:hover{border-color:var(--accent)}
+.opt input{margin:4px 0 0;accent-color:var(--accent)}
+.opt.right{border-color:#2f9a5a;background:color-mix(in srgb,#2f9a5a 12%,transparent)}
+.opt.wrong{border-color:#d0504c;background:color-mix(in srgb,#d0504c 12%,transparent)}
+.why{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.why b{color:var(--fg)}
+.lab{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start}
+.kern{display:grid;gap:10px;justify-items:start}
+.kgrid{display:grid;grid-template-columns:repeat(3,52px);gap:4px}
+.kgrid input{width:52px;height:44px;text-align:center;font:600 16px var(--f-mono);border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.kgrid input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.presets{display:flex;flex-wrap:wrap;gap:6px;max-width:240px}
+.presets .btn{height:32px;font-size:13px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.chk input{accent-color:var(--accent)}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
+.views figure{margin:0;display:grid;gap:6px;min-width:0}
+.views canvas{width:100%;height:auto;aspect-ratio:4/3;border-radius:8px;image-rendering:pixelated;background:var(--stage)}
+.views figcaption{font:600 13px var(--f-body);color:var(--muted)}
+.tasks{margin:0;padding-left:1.1em;display:grid;gap:6px}
+@media (max-width:640px){.lab{grid-template-columns:1fr}}
 </style>
 
 <div class="wrap">
   <header>
     <p class="eyebrow">How computers learned to see · 2012</p>
     <h1>AlexNet in Six Episodes</h1>
-    <p class="lede">The neural network that kicked off today's AI boom, built by Alex Krizhevsky, Ilya Sutskever and Geoffrey Hinton and trained on two gaming graphics cards. Six short animated episodes, about a minute each, then a hands-on Episode 7 where you build and train your own in Python. Turn on narration to hear the episodes read aloud.</p>
+    <p class="lede">The neural network that kicked off today's AI boom, built by Alex Krizhevsky, Ilya Sutskever and Geoffrey Hinton and trained on two gaming graphics cards. Six short animated episodes, about a minute each, then a hands-on Episode 7 where you build and train your own in Python. Turn on narration to hear the episodes read aloud. After each episode, answer three quick questions to check it stuck.</p>
+    <p class="prog" id="prog" aria-live="polite"></p>
   </header>
 
   <nav class="eps" id="eps" aria-label="Episodes"></nav>
@@ -123,6 +158,33 @@ code{font-family:var(--f-mono);font-size:.9em}
     </div>
   </section>
 
+  <section class="panel" id="quiz" aria-labelledby="quiz-h">
+    <header><h2 id="quiz-h">Check yourself</h2><span class="score" id="qscore"></span></header>
+    <ol class="qs" id="qs"></ol>
+  </section>
+
+  <section class="panel" id="lab" aria-labelledby="lab-h">
+    <header><span class="pn">Try it</span><h2 id="lab-h">Filter Lab</h2></header>
+    <p class="sub">Be the filter from Episode 3. Type nine numbers, and every output pixel becomes the sum of those numbers multiplied by the brightness underneath them. Bright output means “my pattern is here”.</p>
+    <div class="lab">
+      <div class="kern">
+        <div class="kgrid" id="kgrid" role="group" aria-label="3 by 3 filter numbers"></div>
+        <div class="presets" id="presets"></div>
+        <label class="chk"><input type="checkbox" id="relu" checked> Apply ReLU (negative → 0)</label>
+      </div>
+      <div class="views">
+        <figure><canvas id="labin" width="64" height="48"></canvas><figcaption>Picture (brightness)</figcaption></figure>
+        <figure><canvas id="labout" width="64" height="48"></canvas><figcaption id="outcap">Filter output</figcaption></figure>
+      </div>
+    </div>
+    <ol class="tasks">
+      <li>Pick <b>Vertical edges</b> and untick ReLU. Left edges of shapes go amber and right edges go teal (negative). Tick ReLU again and the teal vanishes.</li>
+      <li><b>Horizontal edges</b> finds the tops of shapes. Change the numbers so it finds only the <b>bottoms</b> instead.</li>
+      <li>Try <b>Blur</b>. A blur doesn't find a pattern. Why might a network still find it useful?</li>
+      <li>In AlexNet nobody typed these numbers. Training found 96 sets of them by itself.</li>
+    </ol>
+  </section>
+
 
 <section class="build" id="build" aria-labelledby="build-h">
   <p class="eyebrow">Episode 7 · hands-on</p>
@@ -139,7 +201,7 @@ code{font-family:var(--f-mono);font-size:.9em}
 
   <article class="part">
     <header><span class="pn">Part 1</span><h3>Meet the real AlexNet</h3><span class="time">2 min</span></header>
-    <p>PyTorch includes AlexNet already trained on ImageNet. You load it, show it a photo, and get its top 5 guesses, just like Episode 4. Then you look at the filters it taught itself, the same stripes and colour blobs from Episode 3.</p>
+    <p>PyTorch includes AlexNet already trained on ImageNet. You load it, show it a photo, and get its top 5 guesses, just like Episode 4. Then you slide your own 3×3 filter over a real photo, and look at the filters it taught itself, the same stripes and colour blobs from Episode 3. Every part ends with a short quiz.</p>
     <figure class="code"><figcaption><span>Load the trained network</span><button class="copy" type="button">Copy</button></figcaption><pre><code>from torchvision.models import alexnet, AlexNet_Weights
 
 weights = AlexNet_Weights.IMAGENET1K_V1          # the trained &quot;knob settings&quot;
@@ -231,7 +293,7 @@ plot_history(tiny_history, &quot;TinyAlexNet on CIFAR-10&quot;)</code></pre></fi
 
   <article class="part">
     <header><span class="pn">Part 3</span><h3>Real-world project: Pet Breed Detector</h3><span class="time">~5 min</span></header>
-    <p>Engineers rarely start from zero. They keep a network that already knows how to see and retrain only its last layer for a new job. This is called <b>transfer learning</b>. You'll teach AlexNet 37 cat and dog breeds from Oxford's pet photo dataset, then launch it as a web app with a link you can open on your phone.</p>
+    <p>Engineers rarely start from zero. They keep the layers of a network that already know how to see, freeze them, and retrain only the deciding layers for a new job. This is called <b>transfer learning</b>. You'll teach AlexNet 37 cat and dog breeds from Oxford's pet photo dataset, then launch it as a web app with a link you can open on your phone.</p>
     <figure class="code"><figcaption><span>Keep the eyes, swap the brain</span><button class="copy" type="button">Copy</button></figcaption><pre><code># ---- Transfer learning: keep AlexNet&#x27;s eyes, give it a new brain for breeds ----
 pet_model = alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
 
@@ -754,18 +816,75 @@ const capEl=$('caption'), segEl=$('segbar'), statusEl=$('status'), bigplay=$('bi
 const fmt=s=>Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
 EPS.forEach((e,i)=>{const b=document.createElement('button'); b.className='ep'; b.type='button';
   const dur=e.scenes.reduce((a,s)=>a+s.d,0);
-  b.innerHTML=`<span class="n">EPISODE ${i+1} · ${fmt(dur)}</span><span class="t">${e.title}</span>`;
+  b.innerHTML=`<span class="n">EPISODE ${i+1} · ${fmt(dur)}</span><span class="t">${e.title}</span><span class="d"></span>`;
   b.addEventListener('click',()=>loadEp(i,true)); epsEl.appendChild(b);});
+
+/* ---------- progress (per-viewer, browser only) ---------- */
+const KEY='alexnet-progress';
+let prog={watched:[],quiz:{}};
+try{prog=Object.assign(prog,JSON.parse(localStorage.getItem(KEY)||'{}'));}catch(e){}
+const saveProg=()=>{try{localStorage.setItem(KEY,JSON.stringify(prog));}catch(e){} showProg();};
+function showProg(){
+  const right=Object.values(prog.quiz).reduce((a,q)=>a+q.filter(Boolean).length,0);
+  $('prog').innerHTML=`Your progress: <b>${prog.watched.length} of ${EPS.length}</b> episodes watched · <b>${right} of ${EPS.length*3}</b> questions right`;
+  [...epsEl.querySelectorAll('button.ep')].forEach((b,i)=>{const q=prog.quiz[i]||[]; const s=q.filter(Boolean).length;
+    b.querySelector('.d').textContent=[prog.watched.includes(i)?'✓ watched':'',q.length?`quiz ${s}/3`:''].filter(Boolean).join(' · ');});
+}
+function markWatched(i){if(!prog.watched.includes(i)){prog.watched.push(i); saveProg();}}
+
+/* ---------- quizzes: [question, options, index of right answer, why] ---------- */
+const QUIZ=[
+ [["What did the “top-5 error” score measure?",["How many of 5 test photos it got wrong","How often the right answer was missing from its top 5 guesses","How many seconds it took per photo"],1,"The computer could make 5 guesses. It only counted as wrong if none of them was right."],
+  ["How much better was AlexNet than the next-best team?",["About 1 point: 25.8% vs 26.2%","About 11 points: 15.3% vs 26.2%","About 50 points"],1,"A jump of almost 11 points in one year, when teams had been improving by one or two."],
+  ["How many labelled practice photos did it learn from?",["1,000","60 million","1.2 million"],2,"1.2 million photos in 1,000 categories. The 60 million is the number of knobs, from Episode 4."]],
+ [["What is a photo to a computer?",["A grid of numbers","A list of the objects in it","A rough sketch of the shapes"],0,"Every pixel is stored as numbers. The computer never sees a cat, only numbers."],
+  ["How many numbers describe one colour pixel?",["1","3, for red, green and blue","255"],1,"Three numbers from 0 to 255. 255 is the brightest a single number can be, not how many there are."],
+  ["Why does AlexNet's input have 150,528 numbers?",["224 × 224 pixels × 3 colours","It was the most a GPU could hold","It's the number of photos in one batch"],0,"224 × 224 = 50,176 pixels, and each one has 3 numbers."]],
+ [["What does a filter do?",["Removes noise from the photo","Slides over the picture and lights up wherever its pattern appears","Picks the final answer"],1,"It multiplies and adds at every spot. The output is a map of where its pattern is. Try it in the Filter Lab below."],
+  ["Who designed AlexNet's first-layer filters?",["Alex, by hand","They were copied from a cat's brain","Nobody: the network learned them in training"],2,"They started random. Training turned them into edge and colour detectors, a lot like cells in your visual cortex."],
+  ["What do the deeper layers do?",["Combine simple patterns into bigger ones: edges → shapes → parts → objects","Make the picture sharper","Repeat the first layer to double-check it"],0,"Each layer builds on the one before, so later layers respond to whole parts like eyes and wheels."]],
+ [["How many learning layers does AlexNet have?",["3","8: 5 convolution layers and 3 dense layers","1,000"],1,"5 convolution layers find patterns, then 3 dense layers weigh up the evidence and decide."],
+  ["As a photo flows through, its grid of numbers gets…",["Bigger and shallower","Smaller but deeper","Exactly the same size"],1,"224×224×3 shrinks to 13×13×384: less about where things are, more about what they are."],
+  ["What are AlexNet's 60 million parameters?",["Photos in the training set","Adjustable numbers (knobs) set by learning","Lines of code"],1,"Far too many to set by hand. Training finds good settings for all of them."]],
+ [["What is backpropagation?",["Showing the photos in reverse order","Working out which knobs caused a mistake and nudging each one to do better","Copying knobs from another network"],1,"The error signal flows backwards through the layers, blaming each knob a little."],
+  ["A ReLU neuron receives −3. What does it output?",["−3","3","0"],2,"Negative becomes 0, positive passes through unchanged. Simple, and it made training about 6× faster."],
+  ["Why switch off half the neurons at random during training (dropout)?",["To save electricity","So no neuron can be relied on, and the network learns sturdier patterns instead of memorising","Because the GPU ran out of memory"],1,"Memorising the training photos is called overfitting. Dropout and flipped or cropped photos both fight it."]],
+ [["Why are graphics cards good for neural networks?",["They do thousands of small sums at the same time","They have more storage than a normal computer","They were designed for AI"],0,"Games need the same kind of maths, millions of small multiplications at once."],
+  ["Why was AlexNet split across two cards?",["To go twice as fast","It didn't fit in one card's 3 GB of memory","One card was for cats, one for dogs"],1,"Each card held half the network. They only swapped notes at a few layers."],
+  ["How long did training take?",["About 5–6 days","About 6 minutes","About 6 months"],0,"About 90 passes through 1.2 million photos. Your notebook does a mini version in minutes on a newer GPU."]]
+];
+const qsEl=$('qs');
+function buildQuiz(){
+  $('quiz-h').textContent=`Check yourself: Episode ${ep+1}, ${EPS[ep].title}`;
+  const saved=prog.quiz[ep]; qsEl.innerHTML='';
+  QUIZ[ep].forEach(([q,opts,ok,why],qi)=>{
+    const li=document.createElement('li'); li.className='q';
+    const fs=document.createElement('fieldset'); const lg=document.createElement('legend'); lg.textContent=`${qi+1}. ${q}`; fs.appendChild(lg);
+    const fb=document.createElement('p'); fb.className='why'; fb.hidden=true;
+    opts.forEach((o,oi)=>{const lab=document.createElement('label'); lab.className='opt';
+      const r=document.createElement('input'); r.type='radio'; r.name=`q${ep}-${qi}`; r.value=oi;
+      lab.append(r,document.createTextNode(o)); fs.appendChild(lab);
+      r.addEventListener('change',()=>{
+        fs.querySelectorAll('.opt').forEach(l=>l.classList.remove('right','wrong'));
+        lab.classList.add(oi===ok?'right':'wrong');
+        fb.innerHTML=`<b>${oi===ok?'Right.':'Not quite.'}</b> `; fb.appendChild(document.createTextNode(why)); fb.hidden=false;
+        const a=prog.quiz[ep]||[]; if(a[qi]===undefined){a[qi]=oi===ok; prog.quiz[ep]=a; saveProg(); qscore();}
+      });});
+    fs.appendChild(fb); li.appendChild(fs); qsEl.appendChild(li);});
+  qscore();
+}
+function qscore(){const a=(prog.quiz[ep]||[]).filter(x=>x!==undefined&&x!==null);
+  $('qscore').textContent=a.length?`first tries: ${a.filter(Boolean).length} of 3 right`:'';}
 function buildSeg(){segEl.innerHTML=''; EPS[ep].scenes.forEach((s,i)=>{const b=document.createElement('button'); b.type='button'; b.style.flex=s.d; b.setAttribute('aria-label','Scene '+(i+1)); b.innerHTML='<i></i>'; b.addEventListener('click',()=>{fresh=false; ended=false; setScene(i);}); segEl.appendChild(b);});}
 const cur=()=>EPS[ep].scenes[sc];
 function speak(){ if(!narr||!('speechSynthesis' in window))return; try{speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(cur().cap); u.rate=1; u.lang='en-GB'; speaking=true; u.onend=u.onerror=()=>{speaking=false;}; speechSynthesis.speak(u);}catch(e){speaking=false;} }
 function hush(){speaking=false; try{if('speechSynthesis' in window) speechSynthesis.cancel();}catch(e){}}
 function setScene(i){sc=i; t=0; hold=0; ui(); if(playing) speak(); else hush();}
-function loadEp(i,auto){ep=i; ended=false; fresh=!auto; playing=!!auto; buildSeg(); setScene(0);}
+function loadEp(i,auto){ep=i; ended=false; fresh=!auto; playing=!!auto; buildSeg(); buildQuiz(); setScene(0);}
 function play(){if(ended){loadEp(ep<EPS.length-1?ep+1:0,true); return;} if(fresh){fresh=false; t=0;} playing=true; ui(); speak();}
 function pause(){playing=false; hush(); ui();}
 function ui(){
-  capEl.textContent=cur().cap;
+  capEl.textContent=ended?`End of Episode ${ep+1}. Answer the three questions below to check it stuck, then play the next one.`:cur().cap;
   [...epsEl.children].forEach((b,i)=>b.setAttribute('aria-current',i===ep?'true':'false'));
   statusEl.textContent=`Episode ${ep+1} of ${EPS.length} · Scene ${sc+1} of ${EPS[ep].scenes.length}`;
   $('playicon').innerHTML=playing?'<path d="M3 2h4v12H3zM9 2h4v12H9z"/>':'<path d="M4 2l10 6-10 6z"/>';
@@ -780,7 +899,7 @@ function render(tt){ctx.fillStyle=C.bg; ctx.fillRect(0,0,W,H);
   txt(`EP ${ep+1} · ${EPS[ep].title.toUpperCase()}`,24,26,{s:12,f:MONO,c:C.dim});}
 let last=performance.now();
 function frame(now){const dt=Math.min(.1,(now-last)/1000); last=now;
-  if(playing){t+=dt; const s=cur(); if(t>=s.d){ if(narr&&speaking&&hold<12){hold+=dt; t=s.d;} else if(sc<EPS[ep].scenes.length-1){setScene(sc+1);} else {t=s.d; playing=false; ended=true; hush(); ui();} } }
+  if(playing){t+=dt; const s=cur(); if(t>=s.d){ if(narr&&speaking&&hold<12){hold+=dt; t=s.d;} else if(sc<EPS[ep].scenes.length-1){setScene(sc+1);} else {t=s.d; playing=false; ended=true; hush(); markWatched(ep); ui();} } }
   render(t); progress(); requestAnimationFrame(frame);}
 $('play').addEventListener('click',()=>playing?pause():play());
 bigplay.addEventListener('click',play);
@@ -789,7 +908,7 @@ $('prev').addEventListener('click',()=>{fresh=false; ended=false; if(t>1.5||sc==
 $('restart').addEventListener('click',()=>{loadEp(ep,true);});
 $('narr').addEventListener('click',()=>{narr=!narr; $('narr').setAttribute('aria-pressed',String(narr)); if(narr&&playing) speak(); else hush();});
 document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('button'))return; if(e.code==='Space'){e.preventDefault(); playing?pause():play();} if(e.key==='ArrowRight') $('next').click(); if(e.key==='ArrowLeft') $('prev').click();});
-buildSeg(); ui();
+buildSeg(); buildQuiz(); showProg(); ui();
 requestAnimationFrame(frame);
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>render(t));
 })();
@@ -818,6 +937,47 @@ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>render(t)
   }));
   const eps=document.getElementById('eps');
   if(eps){const a=document.createElement('a'); a.className='ep ep7'; a.href='#build'; a.innerHTML='<span class="n">EPISODE 7 · HANDS-ON</span><span class="t">Build It Yourself</span>'; eps.appendChild(a);}
+})();
+
+/* ---------- Filter Lab: a live 3x3 convolution ---------- */
+(function(){
+  const IW=64, IH=48;
+  const src=document.createElement('canvas'); src.width=IW; src.height=IH; const g=src.getContext('2d');
+  g.fillStyle='#2b2b2b'; g.fillRect(0,0,IW,IH);
+  g.fillStyle='#e8e8e8'; g.beginPath(); g.arc(17,17,11,0,Math.PI*2); g.fill();
+  g.fillStyle='#9a9a9a'; g.fillRect(36,6,22,16);
+  g.fillStyle='#d0d0d0'; g.beginPath(); g.moveTo(6,44); g.lineTo(20,28); g.lineTo(34,44); g.closePath(); g.fill();
+  g.fillStyle='#bdbdbd'; for(let i=0;i<4;i++) g.fillRect(40+i*6,28,3,16);
+  const d=g.getImageData(0,0,IW,IH).data, GI=new Float32Array(IW*IH);
+  for(let i=0;i<IW*IH;i++) GI[i]=(d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114)/255;
+
+  const inC=document.getElementById('labin').getContext('2d'), outC=document.getElementById('labout').getContext('2d');
+  const im=inC.createImageData(IW,IH);
+  for(let i=0;i<IW*IH;i++){const v=GI[i]*255; im.data.set([v,v,v+6,255],i*4);}
+  inC.putImageData(im,0,0);
+
+  const PRESETS={'Vertical edges':[-1,0,1,-1,0,1,-1,0,1],'Horizontal edges':[-1,-1,-1,0,0,0,1,1,1],'Outline':[-1,-1,-1,-1,8,-1,-1,-1,-1],'Sharpen':[0,-1,0,-1,5,-1,0,-1,0],'Blur':[1,1,1,1,1,1,1,1,1],'Do nothing':[0,0,0,0,1,0,0,0,0]};
+  const kg=document.getElementById('kgrid'), relu=document.getElementById('relu'), cap=document.getElementById('outcap');
+  const cells=[...Array(9)].map((_,i)=>{const e=document.createElement('input'); e.type='number'; e.step='1'; e.min='-9'; e.max='9';
+    e.setAttribute('aria-label',`row ${Math.floor(i/3)+1}, column ${i%3+1}`); e.addEventListener('input',run); kg.appendChild(e); return e;});
+  const ps=document.getElementById('presets');
+  Object.entries(PRESETS).forEach(([n,k])=>{const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent=n;
+    b.addEventListener('click',()=>{k.forEach((v,i)=>cells[i].value=v); run();}); ps.appendChild(b);});
+  relu.addEventListener('change',run);
+
+  function run(){
+    const k=cells.map(c=>parseFloat(c.value)||0), out=new Float32Array(IW*IH); let mx=1e-6;
+    for(let y=0;y<IH;y++)for(let x=0;x<IW;x++){let s=0;
+      for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const yy=Math.min(IH-1,Math.max(0,y+j)), xx=Math.min(IW-1,Math.max(0,x+i)); s+=GI[yy*IW+xx]*k[(j+1)*3+i+1];}
+      if(relu.checked) s=Math.max(0,s);
+      out[y*IW+x]=s; mx=Math.max(mx,Math.abs(s));}
+    const o=outC.createImageData(IW,IH);
+    for(let i=0;i<IW*IH;i++){const v=out[i]/mx, a=Math.abs(v), c=v>=0?[242,165,65]:[79,179,191];
+      o.data.set([20+(c[0]-20)*a,24+(c[1]-24)*a,41+(c[2]-41)*a,255],i*4);}
+    outC.putImageData(o,0,0);
+    cap.textContent=relu.checked?'Filter output after ReLU (amber = pattern found)':'Filter output (amber = positive, teal = negative)';
+  }
+  PRESETS['Vertical edges'].forEach((v,i)=>cells[i].value=v); run();
 })();
 </script>
 
