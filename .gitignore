@@ -1,0 +1,4 @@
+.DS_Store
+data/
+*.pt
+.ipynb_checkpoints/

@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AlexNet in Six Episodes</title>
+<meta name="description" content="Six short animated episodes that explain AlexNet, the 2012 network that kicked off deep learning, plus a hands-on Python notebook to build your own.">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a single cinema screen in the middle; episode rail above, cheat sheet below */
+:root{
+  --bg:#eceef5; --surface:#ffffff; --fg:#191d30; --muted:#565c7a; --line:#d4d7e5;
+  --accent:#c4620f; --accent-soft:#fbe9d6; --chip:#e2e5f0;
+  --stage:#141829;
+  --f-display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1020; --surface:#161a2c; --fg:#e7e9f4; --muted:#9aa0bd; --line:#272c45;
+    --accent:#f2a541; --accent-soft:#2b2417; --chip:#20253b; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1020; --surface:#161a2c; --fg:#e7e9f4; --muted:#9aa0bd; --line:#272c45;
+  --accent:#f2a541; --accent-soft:#2b2417; --chip:#20253b; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:28px 56px;display:grid;gap:22px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(2rem,5vw,3.2rem);line-height:1.02;margin:.25rem 0 .5rem;text-wrap:balance;letter-spacing:-.01em}
+.lede{color:var(--muted);max-width:62ch;margin:0}
+.eps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ep{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:10px 12px;text-align:left;cursor:pointer;font:inherit;display:grid;gap:2px;min-width:0}
+.ep:hover{border-color:var(--accent)}
+.ep:focus-visible,.btn:focus-visible,.segbar button:focus-visible,.bigplay:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.ep[aria-current="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.ep .n{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.ep .t{font-weight:700;font-size:14px;line-height:1.25}
+.player{display:grid;gap:10px}
+.screen{position:relative;background:var(--stage);border-radius:14px;overflow:hidden;aspect-ratio:16/9;max-width:100%}
+canvas{display:block;width:100%;height:100%}
+.bigplay{position:absolute;right:14px;bottom:14px;border:0;border-radius:999px;background:#f2a541;color:#141829;font:700 15px var(--f-body);padding:10px 18px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.segbar{display:flex;gap:4px}
+.segbar button{flex:1;height:8px;border:0;padding:0;border-radius:4px;background:var(--chip);cursor:pointer;position:relative;overflow:hidden}
+.segbar i{position:absolute;inset:0 auto 0 0;background:var(--accent);width:0}
+.caption{font-size:clamp(1.02rem,2.1vw,1.25rem);line-height:1.5;min-height:3.2em;margin:4px 0 0;max-width:70ch}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;height:38px;min-width:38px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font:600 14px var(--f-body)}
+.btn svg{width:16px;height:16px;fill:currentColor}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.status{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;margin-top:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;min-width:0}
+.card h2{font-family:var(--f-display);font-weight:800;font-size:1.3rem;margin:0 0 10px}
+dl{margin:0;display:grid;gap:10px}
+dt{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+dd{margin:0}
+.num{font-variant-numeric:tabular-nums}
+@media (max-width:520px){.status{margin-left:0;width:100%}}
+
+.build{display:grid;gap:18px;margin-top:10px;scroll-margin-top:16px}
+.bh{font-family:var(--f-display);font-weight:800;font-size:clamp(1.7rem,4vw,2.4rem);margin:0;line-height:1.05}
+.setup{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;counter-reset:s}
+.setup li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:4px;min-width:0}
+.setup li::before{content:counter(s);font:700 12px var(--f-mono);color:var(--accent)}
+.setup span{color:var(--muted);font-size:14px}
+.part{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:grid;gap:12px;min-width:0}
+.part header{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px}
+.part h3{font-family:var(--f-display);font-weight:800;font-size:1.3rem;margin:0}
+.pn{font:700 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;background:var(--accent-soft);color:var(--accent);padding:3px 8px;border-radius:999px}
+.time{margin-left:auto;font:500 12px var(--f-mono);color:var(--muted)}
+.part p{margin:0;max-width:72ch}
+.code{margin:0;border-radius:10px;overflow:hidden;border:1px solid var(--line);min-width:0}
+.code figcaption{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px 6px 12px;background:var(--chip);font:600 13px var(--f-body)}
+.copy{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:6px;font:600 12px var(--f-body);padding:4px 10px;cursor:pointer}
+.copy:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.code pre{margin:0;padding:14px 16px;background:var(--stage);color:#e6e8f3;overflow-x:auto;font:500 12.5px/1.6 var(--f-mono);tab-size:4}
+.code .cm{color:#8a91b4}.code .st{color:#9fd8a3}.code .kw{color:#f2a541}
+.chal{margin:0;padding-left:1.1em;display:grid;gap:8px}
+.chal li{max-width:72ch}
+code{font-family:var(--f-mono);font-size:.9em}
+.ep.ep7{border-style:dashed;text-decoration:none}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin:2px 0 0}
+.btn-cta,.btn-ghost{display:inline-flex;align-items:center;height:42px;padding:0 16px;border-radius:10px;font:700 15px var(--f-body);text-decoration:none}
+.btn-cta{background:var(--accent);color:var(--surface)}
+.btn-ghost{border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.btn-cta:focus-visible,.btn-ghost:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.foot{color:var(--muted);font-size:13px;margin:0}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">How computers learned to see · 2012</p>
+    <h1>AlexNet in Six Episodes</h1>
+    <p class="lede">The neural network that kicked off today's AI boom, built by Alex Krizhevsky, Ilya Sutskever and Geoffrey Hinton and trained on two gaming graphics cards. Six short animated episodes, about a minute each, then a hands-on Episode 7 where you build and train your own in Python. Turn on narration to hear the episodes read aloud.</p>
+  </header>
+
+  <nav class="eps" id="eps" aria-label="Episodes"></nav>
+
+  <section class="player" aria-label="Episode player">
+    <div class="screen">
+      <canvas id="cv" width="960" height="540" aria-label="Animated explainer"></canvas>
+      <button class="bigplay" id="bigplay"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M4 2l10 6-10 6z" fill="currentColor"/></svg><span>Play episode 1</span></button>
+    </div>
+    <div class="segbar" id="segbar"></div>
+    <p class="caption" id="caption" aria-live="polite"></p>
+    <div class="ctrls">
+      <button class="btn" id="prev" aria-label="Previous scene"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
+      <button class="btn" id="play" aria-label="Play"><svg viewBox="0 0 16 16" id="playicon"><path d="M4 2l10 6-10 6z"/></svg></button>
+      <button class="btn" id="next" aria-label="Next scene"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
+      <button class="btn" id="restart" aria-label="Restart episode"><svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 1 1-5.6 8.1l1.9-.7A4 4 0 1 0 8 4v2.5L4 3.3 8 0z"/></svg>Restart</button>
+      <button class="btn" id="narr" aria-pressed="false"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2zM11 5a4 4 0 0 1 0 6l-1-1a2.6 2.6 0 0 0 0-4z"/></svg>Narration</button>
+      <span class="status" id="status"></span>
+    </div>
+  </section>
+
+
+<section class="build" id="build" aria-labelledby="build-h">
+  <p class="eyebrow">Episode 7 · hands-on</p>
+  <h2 id="build-h" class="bh">Build It Yourself</h2>
+  <p class="lede">Write real Python, train your own mini AlexNet on a free Google GPU, then turn it into a working app that recognises 37 cat and dog breeds. About 15 minutes of GPU time. These are the key pieces; the full notebook runs in one click.</p>
+  <p class="cta"><a class="btn-cta" href="https://colab.research.google.com/github/Fernfant/alexnet-explained/blob/main/build_your_own_alexnet.ipynb" target="_blank" rel="noopener">Open the notebook in Google Colab</a><a class="btn-ghost" href="build_your_own_alexnet.ipynb" download>Download .ipynb</a><a class="btn-ghost" href="https://github.com/Fernfant/alexnet-explained" target="_blank" rel="noopener">View on GitHub</a></p>
+
+  <ol class="setup">
+    <li><b>Open the notebook</b><span>Click “Open the notebook in Google Colab” above and sign in with a Google account. It's free.</span></li>
+    <li><b>Save your own copy</b><span>File → Save a copy in Drive, so your changes are kept.</span></li>
+    <li><b>Switch on the GPU</b><span>Runtime → Change runtime type → T4 GPU → Save. That's your “gaming card”.</span></li>
+    <li><b>Run each cell</b><span>Click a cell and press Shift + Enter. Read the comments as you go.</span></li>
+  </ol>
+
+  <article class="part">
+    <header><span class="pn">Part 1</span><h3>Meet the real AlexNet</h3><span class="time">2 min</span></header>
+    <p>PyTorch includes AlexNet already trained on ImageNet. You load it, show it a photo, and get its top 5 guesses, just like Episode 4. Then you look at the filters it taught itself, the same stripes and colour blobs from Episode 3.</p>
+    <figure class="code"><figcaption><span>Load the trained network</span><button class="copy" type="button">Copy</button></figcaption><pre><code>from torchvision.models import alexnet, AlexNet_Weights
+
+weights = AlexNet_Weights.IMAGENET1K_V1          # the trained &quot;knob settings&quot;
+model = alexnet(weights=weights).to(device).eval()
+categories = weights.meta[&quot;categories&quot;]          # the 1,000 ImageNet labels
+
+print(model)
+print(f&quot;\nKnobs (parameters): {sum(p.numel() for p in model.parameters()):,}&quot;)
+print(f&quot;Categories: {len(categories)}, e.g. {categories[281]!r}, {categories[779]!r}, {categories[949]!r}&quot;)</code></pre></figure>
+    <figure class="code"><figcaption><span>See the filters it learned</span><button class="copy" type="button">Copy</button></figcaption><pre><code># ---- Look inside: the 64 filters AlexNet taught itself ----
+# Nobody drew these. They came out of training. Look for stripes (edge detectors) and colour blobs.
+w = model.features[0].weight.detach().cpu()                    # shape: 64 filters x 3 colours x 11 x 11
+grid = torchvision.utils.make_grid(w, nrow=16, padding=1, normalize=True, scale_each=True)
+plt.figure(figsize=(12, 3.4)); plt.imshow(grid.permute(1, 2, 0)); plt.axis(&quot;off&quot;)
+plt.title(&quot;AlexNet&#x27;s first-layer filters (each one is 11x11 pixels)&quot;); plt.show()</code></pre></figure>
+  </article>
+
+  <article class="part">
+    <header><span class="pn">Part 2</span><h3>Build TinyAlexNet from scratch</h3><span class="time">~6 min</span></header>
+    <p>Same recipe as 2012, smaller ingredients: 50,000 tiny photos (CIFAR-10) in 10 classes. The network keeps AlexNet's shape of 5 convolution layers and 3 dense layers, with ReLU and dropout. Expect roughly 80% correct on photos it has never seen.</p>
+    <figure class="code"><figcaption><span>The network: 5 conv + 3 dense layers</span><button class="copy" type="button">Copy</button></figcaption><pre><code># ---- The network: same shape as AlexNet, sized for 32x32 photos ----
+class TinyAlexNet(nn.Module):
+    def __init__(self, num_classes=10):
+        super().__init__()
+        # 5 convolution layers: find patterns (edges -&gt; shapes -&gt; parts)
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),    nn.ReLU(inplace=True), nn.MaxPool2d(2),  # 32 -&gt; 16
+            nn.Conv2d(64, 192, kernel_size=3, padding=1),  nn.ReLU(inplace=True), nn.MaxPool2d(2),  # 16 -&gt; 8
+            nn.Conv2d(192, 384, kernel_size=3, padding=1), nn.ReLU(inplace=True),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1), nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU(inplace=True), nn.MaxPool2d(2),  # 8 -&gt; 4
+        )
+        # 3 dense layers: weigh up the evidence and decide
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.5), nn.Linear(256 * 4 * 4, 1024), nn.ReLU(inplace=True),   # trick 2: dropout
+            nn.Dropout(0.5), nn.Linear(1024, 1024),        nn.ReLU(inplace=True),
+            nn.Linear(1024, num_classes),                  # one score per class
+        )
+        # Start the conv knobs at a sensible random size (&quot;He initialisation&quot;) so training gets going fast
+        for m in self.features:
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, nonlinearity=&quot;relu&quot;)
+                nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = torch.flatten(x, 1)
+        return self.classifier(x)
+
+tiny = TinyAlexNet()
+x = torch.zeros(1, 3, 32, 32)
+for layer in tiny.features:
+    x = layer(x)
+    if isinstance(layer, (nn.Conv2d, nn.MaxPool2d)):
+        print(f&quot;{layer.__class__.__name__:10s} {tuple(x.shape[1:])}&quot;)
+print(f&quot;\nTinyAlexNet knobs: {sum(p.numel() for p in tiny.parameters()):,}  (the real one has ~61 million)&quot;)
+tiny = tiny.to(device)</code></pre></figure>
+    <figure class="code"><figcaption><span>Training: guess, measure, blame, nudge</span><button class="copy" type="button">Copy</button></figcaption><pre><code># ---- Training: guess, measure the mistake, nudge every knob (Episode 5) ----
+def run_epoch(model, loader, optimizer=None, scheduler=None):
+    training = optimizer is not None
+    model.train(training)                           # dropout only switches on while training
+    total_loss, correct, seen = 0.0, 0, 0
+    with torch.set_grad_enabled(training):
+        for x, y in loader:
+            x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
+            scores = model(x)                       # 1. guess
+            loss = F.cross_entropy(scores, y)       # 2. how wrong was it?
+            if training:
+                optimizer.zero_grad(set_to_none=True)
+                loss.backward()                     # 3. backpropagation: which knobs to blame?
+                optimizer.step()                    # 4. nudge every knob a tiny bit
+                if scheduler is not None:
+                    scheduler.step()
+            total_loss += loss.item() * len(y)
+            correct += (scores.argmax(dim=1) == y).sum().item()
+            seen += len(y)
+    return total_loss / seen, correct / seen</code></pre></figure>
+    <figure class="code"><figcaption><span>Go!</span><button class="copy" type="button">Copy</button></figcaption><pre><code># ---- Go! ----
+EPOCHS = 15 if device == &quot;cuda&quot; else 3
+# AlexNet used plain SGD. We use AdamW (2017), a smarter knob-nudger that adapts the step size for every knob.
+optimizer = torch.optim.AdamW(tiny.parameters(), lr=1e-3, weight_decay=5e-4)
+# Start with small nudges, speed up, then slow down again to settle in
+scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1e-3, epochs=EPOCHS,
+                                                steps_per_epoch=len(train_loader))
+# On a T4 GPU expect about 20-30 seconds per pass, ending at roughly 80% on photos it has never seen.
+tiny_history = fit(tiny, train_loader, test_loader, EPOCHS, optimizer, scheduler)
+plot_history(tiny_history, &quot;TinyAlexNet on CIFAR-10&quot;)</code></pre></figure>
+  </article>
+
+  <article class="part">
+    <header><span class="pn">Part 3</span><h3>Real-world project: Pet Breed Detector</h3><span class="time">~5 min</span></header>
+    <p>Engineers rarely start from zero. They keep a network that already knows how to see and retrain only its last layer for a new job. This is called <b>transfer learning</b>. You'll teach AlexNet 37 cat and dog breeds from Oxford's pet photo dataset, then launch it as a web app with a link you can open on your phone.</p>
+    <figure class="code"><figcaption><span>Keep the eyes, swap the brain</span><button class="copy" type="button">Copy</button></figcaption><pre><code># ---- Transfer learning: keep AlexNet&#x27;s eyes, give it a new brain for breeds ----
+pet_model = alexnet(weights=AlexNet_Weights.IMAGENET1K_V1)
+
+for p in pet_model.features.parameters():
+    p.requires_grad = False                         # freeze the 5 conv layers: they already know how to see
+
+pet_model.classifier[6] = nn.Linear(4096, len(pet_classes))   # swap 1,000 ImageNet answers for 37 breeds
+pet_model = pet_model.to(device)
+
+trainable = sum(p.numel() for p in pet_model.parameters() if p.requires_grad)
+print(f&quot;Knobs we will train: {trainable:,} of {sum(p.numel() for p in pet_model.parameters()):,}&quot;)</code></pre></figure>
+    <figure class="code"><figcaption><span>Train the new last layer</span><button class="copy" type="button">Copy</button></figcaption><pre><code>PET_EPOCHS = 6 if device == &quot;cuda&quot; else 2
+pet_opt = torch.optim.Adam([p for p in pet_model.parameters() if p.requires_grad], lr=3e-4, weight_decay=1e-4)
+pet_history = fit(pet_model, pet_train_loader, pet_test_loader, PET_EPOCHS, pet_opt)
+plot_history(pet_history, &quot;Pet Breed Detector (AlexNet + transfer learning)&quot;)
+torch.save(pet_model.state_dict(), &quot;pet_breed_alexnet.pt&quot;)
+print(&quot;Saved the trained model to pet_breed_alexnet.pt&quot;)</code></pre></figure>
+    <figure class="code"><figcaption><span>Launch it as an app</span><button class="copy" type="button">Copy</button></figcaption><pre><code>%pip install -q gradio
+import gradio as gr
+
+def app_predict(img):
+    if img is None:
+        return {}
+    return dict(predict_breed(img.convert(&quot;RGB&quot;), k=5))
+
+gr.Interface(
+    fn=app_predict,
+    inputs=gr.Image(type=&quot;pil&quot;, label=&quot;Photo of a cat or dog&quot;),
+    outputs=gr.Label(num_top_classes=5, label=&quot;Breed&quot;),
+    title=&quot;Pet Breed Detector&quot;,
+    description=&quot;Built on AlexNet (2012) with transfer learning. Trained in minutes on one free GPU.&quot;,
+).launch(share=True)</code></pre></figure>
+  </article>
+
+  <article class="part">
+    <header><span class="pn">Level up</span><h3>Challenges</h3></header>
+    <ul class="chal">
+      <li><b>Go old-school.</b> Swap AdamW for AlexNet's original SGD optimiser. Is it slower to get going?</li>
+      <li><b>Remove a trick.</b> Delete dropout or the flips and crops. Watch the gap between train and test accuracy grow. That gap is called overfitting.</li>
+      <li><b>Unfreeze AlexNet.</b> Fine-tune every layer in Part 3 with a smaller learning rate.</li>
+      <li><b>Try a modern network.</b> Swap in ResNet-18 (2015) and compare.</li>
+      <li><b>Use your own photos.</b> Make folders like <code>football_boots/</code> and <code>trainers/</code> with 30 or more photos each, and load them with <code>ImageFolder</code>.</li>
+    </ul>
+  </article>
+</section>
+
+  <div class="cols">
+    <section class="card">
+      <h2>Fast facts</h2>
+      <dl>
+        <div><dt>The paper</dt><dd>“ImageNet Classification with Deep Convolutional Neural Networks”, NeurIPS 2012, University of Toronto</dd></div>
+        <div><dt>The result</dt><dd class="num">15.3% top-5 error. The next-best entry scored 26.2%</dd></div>
+        <div><dt>The network</dt><dd class="num">8 learned layers (5 convolutional, 3 fully connected), about 60 million parameters and 650,000 neurons</dd></div>
+        <div><dt>The data</dt><dd class="num">1.2 million labelled photos in 1,000 categories, roughly 90 passes over the set</dd></div>
+        <div><dt>The hardware</dt><dd>Two NVIDIA GTX 580 cards with 3 GB each, 5–6 days of training</dd></div>
+        <div><dt>The key ideas</dt><dd>ReLU neurons, dropout, data augmentation, and training on GPUs</dd></div>
+      </dl>
+    </section>
+    <section class="card">
+      <h2>Words to know</h2>
+      <dl>
+        <div><dt>Pixel</dt><dd>One tiny square of a picture, stored as numbers for red, green and blue.</dd></div>
+        <div><dt>Filter (convolution)</dt><dd>A small window that slides over the picture and lights up wherever it spots its pattern.</dd></div>
+        <div><dt>Layer</dt><dd>One stage of the network. Each layer builds bigger patterns out of the previous layer's patterns.</dd></div>
+        <div><dt>Parameter</dt><dd>One adjustable “knob” inside the network. Training means finding good settings for all of them.</dd></div>
+        <div><dt>Backpropagation</dt><dd>Working out how much each knob contributed to a mistake, then nudging it to do better.</dd></div>
+        <div><dt>GPU</dt><dd>A graphics chip built for games, very good at doing thousands of small sums at the same time.</dd></div>
+      </dl>
+    </section>
+  </div>
+  <p class="foot">Made for curious 15-year-olds. Code and notebook on <a href="https://github.com/Fernfant/alexnet-explained">GitHub</a> under the MIT licence.</p>
+</div>
+
+<script>
+(function(){
+const W=960,H=540;
+const C={bg:'#141829',grid:'#1d2240',ink:'#eef0fa',dim:'#8a91b4',faint:'#2a3053',amber:'#f2a541',coral:'#ef6f6c',teal:'#4fb3bf',lilac:'#a99bdf',green:'#7cc47f'};
+const DISP='"Bricolage Grotesque", system-ui, sans-serif', BODY='"Atkinson Hyperlegible", system-ui, sans-serif', MONO='"JetBrains Mono", ui-monospace, monospace';
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const DPR=Math.min(2,window.devicePixelRatio||1);
+cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+
+const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const seg=(p,a,b)=>clamp((p-a)/(b-a));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function rand(seed){let s=seed%2147483647; if(s<=0)s+=2147483646; return ()=>{s=(s*16807)%2147483647; return (s-1)/2147483646;};}
+function rr(x,y,w,h,r){ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,r); else ctx.rect(x,y,w,h);}
+function txt(s,x,y,o={}){ctx.save(); ctx.globalAlpha=ctx.globalAlpha*(o.a===undefined?1:o.a); ctx.font=`${o.w||400} ${o.s||22}px ${o.f||BODY}`; ctx.fillStyle=o.c||C.ink; ctx.textAlign=o.al||'left'; ctx.textBaseline=o.b||'middle'; ctx.fillText(s,x,y); ctx.restore();}
+function arrow(x1,y1,x2,y2,col,a=1,w=3){ctx.save(); ctx.globalAlpha*=a; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); const an=Math.atan2(y2-y1,x2-x1); ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-12*Math.cos(an-.45),y2-12*Math.sin(an-.45)); ctx.lineTo(x2-12*Math.cos(an+.45),y2-12*Math.sin(an+.45)); ctx.closePath(); ctx.fill(); ctx.restore();}
+function alpha(a,fn){ctx.save(); ctx.globalAlpha*=a; fn(); ctx.restore();}
+
+/* ---------- a tiny pixel cat used throughout ---------- */
+const CAT=[
+"................",
+"..k..........k..",
+"..kk........kk..",
+"..kkk......kkk..",
+"..kkkkkkkkkkkk..",
+".kkkkkkkkkkkkkk.",
+".kkeekkkkkkeekk.",
+".kkeekkkkkkeekk.",
+".kkkkkkkkkkkkkk.",
+".kkkkkwnnwkkkkk.",
+".kkkkwwwwwwkkkk.",
+"..kkkkwwwwkkkk..",
+"...kkkkkkkkkk...",
+"................"];
+const CATCOL={'.':[190,212,232],k:[226,138,58],e:[38,52,44],n:[232,120,140],w:[246,232,210]};
+const gray=c=>Math.round(.299*c[0]+.587*c[1]+.114*c[2]);
+function drawCat(x0,y0,cs,o={}){
+  for(let y=0;y<14;y++)for(let x=0;x<16;x++){
+    let c=CATCOL[CAT[y][x]].slice();
+    if(o.gray){const g=gray(c); c=c.map(v=>Math.round(lerp(v,g,o.gray)));}
+    if(o.channel!==undefined){c=c.map((v,i)=>i===o.channel?v:0);}
+    if(o.shift){c=c.map((v,i)=>clamp(v+o.shift[i],0,255));}
+    const xx=o.flip?(15-x):x;
+    ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;
+    ctx.fillRect(x0+xx*cs,y0+y*cs,cs+.5,cs+.5);
+  }
+  if(o.grid){ctx.save(); ctx.globalAlpha*=o.grid; ctx.strokeStyle='rgba(20,24,41,.6)'; ctx.lineWidth=1; ctx.beginPath();
+    for(let x=0;x<=16;x++){ctx.moveTo(x0+x*cs,y0); ctx.lineTo(x0+x*cs,y0+14*cs);}
+    for(let y=0;y<=14;y++){ctx.moveTo(x0,y0+y*cs); ctx.lineTo(x0+16*cs,y0+y*cs);}
+    ctx.stroke(); ctx.restore();}
+}
+
+/* ---------- convolution data ---------- */
+const GI=CAT.map(r=>[...r].map(ch=>gray(CATCOL[ch])/255));
+const KER=[[-1,0,1],[-1,0,1],[-1,0,1]];
+const OUT=[]; let OMAX=0;
+for(let oy=0;oy<12;oy++)for(let ox=0;ox<14;ox++){let s=0; for(let j=0;j<3;j++)for(let i=0;i<3;i++) s+=GI[oy+j][ox+i]*KER[j][i]; s=Math.abs(s); OUT.push(s); OMAX=Math.max(OMAX,s);}
+
+/* ---------- 96 learned-filter thumbnails ---------- */
+const FILT=[];
+(function(){const r=rand(4242); for(let i=0;i<96;i++){const c=document.createElement('canvas'); c.width=c.height=24; const g=c.getContext('2d'); const im=g.createImageData(24,24);
+  const th=r()*Math.PI, fr=.35+r()*.6, ph=r()*6.28, colorful=i>=48, sig=4+r()*4;
+  const hue=[r()*255,r()*255,r()*255];
+  for(let y=0;y<24;y++)for(let x=0;x<24;x++){const dx=x-11.5,dy=y-11.5; const env=Math.exp(-(dx*dx+dy*dy)/(2*sig*sig));
+    const k=(y*24+x)*4; let v;
+    if(!colorful){v=Math.cos((dx*Math.cos(th)+dy*Math.sin(th))*fr+ph)*env; const g0=128+v*127; im.data[k]=g0; im.data[k+1]=g0; im.data[k+2]=g0+8;}
+    else{v=Math.cos((dx*Math.cos(th)+dy*Math.sin(th))*fr*.45+ph)*env; im.data[k]=128+v*(hue[0]-128)*1.6; im.data[k+1]=128+v*(hue[1]-128)*1.6; im.data[k+2]=128+v*(hue[2]-128)*1.6;}
+    im.data[k+3]=255;}
+  g.putImageData(im,0,0); FILT.push(c);}})();
+
+/* ---------- AlexNet architecture ---------- */
+const LAYERS=[
+ {n:'Input',d:'224×224×3',w:8,h:200,c:C.dim},
+ {n:'Conv 1',d:'55×55×96',w:22,h:150,c:C.teal},
+ {n:'Conv 2',d:'27×27×256',w:30,h:110,c:C.teal},
+ {n:'Conv 3',d:'13×13×384',w:36,h:72,c:C.teal},
+ {n:'Conv 4',d:'13×13×384',w:36,h:72,c:C.teal},
+ {n:'Conv 5',d:'13×13×256',w:30,h:72,c:C.teal},
+ {n:'FC 6',d:'4096',w:10,h:190,c:C.lilac},
+ {n:'FC 7',d:'4096',w:10,h:190,c:C.lilac},
+ {n:'FC 8',d:'1000',w:10,h:120,c:C.amber}];
+const LX=[60,150,245,345,440,535,640,725,810];
+function slab(x,cy,h,w,col,glow=0,scale=1){
+  h*=scale; const fw=12*scale, dd=w*.5*scale, top=cy-h/2;
+  ctx.save();
+  if(glow>0){ctx.shadowColor=col; ctx.shadowBlur=30*glow;}
+  ctx.fillStyle=col; ctx.globalAlpha*=.55+.45*glow; ctx.fillRect(x,top,fw,h); ctx.restore();
+  ctx.save(); ctx.fillStyle=col; ctx.globalAlpha*=.8;
+  ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x+fw,top); ctx.lineTo(x+fw+dd,top-dd); ctx.lineTo(x+dd,top-dd); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha*=.45; ctx.beginPath(); ctx.moveTo(x+fw,top); ctx.lineTo(x+fw+dd,top-dd); ctx.lineTo(x+fw+dd,top+h-dd); ctx.lineTo(x+fw,top+h); ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function drawArch(p,hl){
+  const cy=265;
+  LAYERS.forEach((L,i)=>{const k=ease(seg(p,i*.06,i*.06+.18)); if(k<=0)return;
+    alpha(k,()=>{const g=hl?Math.max(0,1-Math.abs(hl-i)):0; slab(LX[i],cy,L.h,L.w,L.c,g);
+      const cx=LX[i]+6+L.w*.25;
+      txt(L.n,cx,128,{s:14,w:700,al:'center',c:g>.3?C.ink:C.dim});
+      txt(L.d,cx,400,{s:12,f:MONO,al:'center',c:C.dim});});});
+  const b=seg(p,.65,.85);
+  alpha(b,()=>{ctx.strokeStyle=C.teal; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(150,96); ctx.lineTo(150,88); ctx.lineTo(570,88); ctx.lineTo(570,96); ctx.stroke();
+    txt('5 convolution layers: find patterns',360,70,{s:15,w:700,c:C.teal,al:'center'});
+    ctx.strokeStyle=C.lilac; ctx.beginPath(); ctx.moveTo(640,96); ctx.lineTo(640,88); ctx.lineTo(832,88); ctx.lineTo(832,96); ctx.stroke();
+    txt('3 dense layers: decide',736,70,{s:15,w:700,c:C.lilac,al:'center'});});
+}
+
+/* ---------- episodes ---------- */
+const EPS=[
+{title:'The Big Test',scenes:[
+ {d:8,cap:"Toronto, 2012. Two students, Alex Krizhevsky and Ilya Sutskever, and their professor Geoffrey Hinton decided to enter the world's toughest computer-vision contest.",
+  draw(p){
+   txt('University of Toronto · 2012',W/2,92,{s:16,f:MONO,c:C.dim,al:'center',a:seg(p,0,.15)});
+   const ppl=[['AK','Alex Krizhevsky','PhD student · wrote the code',C.amber],['IS','Ilya Sutskever','PhD student · co-designer',C.teal],['GH','Geoffrey Hinton','Professor · neural-net pioneer',C.lilac]];
+   ppl.forEach((q,i)=>{const k=ease(seg(p,.08+i*.16,.3+i*.16)); const x=W/2+(i-1)*290, y=245+(1-k)*30;
+     alpha(k,()=>{ctx.beginPath(); ctx.arc(x,y,62,0,Math.PI*2); ctx.fillStyle=q[3]; ctx.fill();
+       txt(q[0],x,y+2,{s:40,w:800,f:DISP,c:C.bg,al:'center'});
+       txt(q[1],x,y+100,{s:24,w:700,al:'center'});
+       txt(q[2],x,y+132,{s:15,c:C.dim,al:'center'});});});
+  }},
+ {d:8,cap:"The contest was called ImageNet. A computer had to look at photos it had never seen and say what was in them. To practise, it got 1.2 million labelled photos.",
+  draw(p){
+   const cols=24,rows=12,sz=34,gap=4,gw=cols*(sz+gap)-gap,x0=(W-gw)/2,y0=58;
+   const n=Math.floor(ease(seg(p,0,.85))*cols*rows); const r=rand(7);
+   for(let i=0;i<cols*rows;i++){const h=r()*360,sh=r(),s2=r(); if(i>=n)continue;
+     const x=x0+(i%cols)*(sz+gap), y=y0+Math.floor(i/cols)*(sz+gap);
+     ctx.fillStyle=`hsl(${h},42%,${28+s2*24}%)`; rr(x,y,sz,sz,4); ctx.fill();
+     ctx.fillStyle=`hsl(${(h+150)%360},60%,70%)`; ctx.beginPath();
+     if(sh<.33) ctx.arc(x+sz/2,y+sz/2,sz*.24,0,Math.PI*2);
+     else if(sh<.66){ctx.moveTo(x+sz*.2,y+sz*.8); ctx.lineTo(x+sz/2,y+sz*.22); ctx.lineTo(x+sz*.8,y+sz*.8); ctx.closePath();}
+     else ctx.rect(x+sz*.25,y+sz*.4,sz*.5,sz*.34);
+     ctx.fill();}
+   ctx.fillStyle='rgba(20,24,41,.9)'; rr(W/2-250,H-128,500,92,14); ctx.fill();
+   const count=Math.round(1200000*ease(seg(p,.05,.85)));
+   txt(count.toLocaleString('en-US'),W/2,H-94,{s:42,w:800,f:DISP,al:'center',c:C.amber});
+   txt('labelled practice photos',W/2,H-58,{s:16,c:C.dim,al:'center'});
+  }},
+ {d:8,cap:"There were 1,000 categories, from school buses to strawberries. Some were really hard: about 120 of them are different dog breeds.",
+  draw(p){
+   const labels=['tabby cat','school bus','strawberry','Dalmatian','volcano','mushroom','golden retriever','espresso','lighthouse','tiger','pizza','jellyfish','canoe','Siberian husky','umbrella','banana','French bulldog','castle'];
+   const dogs=new Set(['Dalmatian','golden retriever','Siberian husky','French bulldog']);
+   ctx.font=`700 20px ${BODY}`; let x=80,y=105; const pos=[];
+   labels.forEach(l=>{const w=ctx.measureText(l).width+32; if(x+w>W-80){x=80;y+=58;} pos.push([x,y,w]); x+=w+12;});
+   labels.forEach((l,i)=>{const k=ease(seg(p,i*.03,i*.03+.12)); const [x,y,w]=pos[i];
+     alpha(k,()=>{const dg=dogs.has(l); ctx.fillStyle=dg?'rgba(79,179,191,.18)':C.faint; rr(x,y-21+(1-k)*10,w,42,21); ctx.fill();
+       if(dg){ctx.strokeStyle=C.teal; ctx.lineWidth=2; ctx.stroke();}
+       txt(l,x+16,y+(1-k)*10,{s:20,w:700,c:dg?C.teal:C.ink});});});
+   txt('1,000 categories',W/2,420,{s:56,w:800,f:DISP,al:'center',c:C.amber,a:ease(seg(p,.6,.75))});
+   txt('about 120 of them are dog breeds',W/2,472,{s:20,al:'center',c:C.teal,a:ease(seg(p,.75,.9))});
+  }},
+ {d:10,cap:"The score: how often the right answer was missing from the computer's top 5 guesses. Lower is better. For years the best teams were stuck around 26 percent. Then AlexNet scored 15.3.",
+  draw(p){
+   const data=[['2010 winner',28.2,C.dim],['2011 winner',25.8,C.dim],['2012 runner-up',26.2,C.dim],['AlexNet, 2012',15.3,C.amber]];
+   const base=440,top=130,sc=(base-top)/30,cx=[250,420,590,760],bw=110;
+   txt('Top-5 error rate · lower is better',W/2,70,{s:20,w:700,al:'center'});
+   ctx.strokeStyle=C.faint; ctx.lineWidth=1;
+   [0,10,20,30].forEach(v=>{const y=base-v*sc; ctx.beginPath(); ctx.moveTo(160,y); ctx.lineTo(850,y); ctx.stroke(); txt(v+'%',145,y,{s:13,f:MONO,c:C.dim,al:'right'});});
+   data.forEach((d,i)=>{const k=ease(seg(p,.06+i*.14,.26+i*.14)); const h=d[1]*sc*k;
+     ctx.fillStyle=d[2]; rr(cx[i]-bw/2,base-h,bw,h,6); ctx.fill();
+     txt(d[0],cx[i],base+24,{s:15,w:i===3?700:400,c:i===3?C.amber:C.dim,al:'center'});
+     if(k>.98) txt(d[1].toFixed(1)+'%',cx[i],base-h-18,{s:20,w:800,f:DISP,al:'center',c:i===3?C.amber:C.ink});});
+   const a=ease(seg(p,.78,.92));
+   if(a>0){alpha(a,()=>{ctx.setLineDash([6,6]); ctx.strokeStyle=C.coral; ctx.lineWidth=2; const y1=base-26.2*sc, y2=base-15.3*sc;
+     ctx.beginPath(); ctx.moveTo(590+bw/2,y1); ctx.lineTo(850,y1); ctx.stroke(); ctx.setLineDash([]);
+     arrow(840,y1+4,840,y2-4,C.coral,1,2); txt('10.9 points',848,(y1+y2)/2,{s:15,w:700,c:C.coral,al:'left'});});}
+  }},
+ {d:7,cap:"AlexNet didn't win by a little. It made the other approaches look old overnight, and researchers everywhere switched to neural networks.",
+  draw(p){
+   const a=ease(seg(p,0,.25)), b=ease(seg(p,.3,.55)), c=ease(seg(p,.6,.8));
+   txt('26.2%',W/2-200,220,{s:84,w:800,f:DISP,al:'center',c:C.dim,a});
+   arrow(W/2-55,220,W/2+50,220,C.ink,a);
+   txt('15.3%',W/2+200,220,{s:84,w:800,f:DISP,al:'center',c:C.amber,a:b});
+   txt('Best of the rest vs AlexNet',W/2,320,{s:22,al:'center',c:C.dim,a:b});
+   txt('A different league.',W/2,410,{s:40,w:800,f:DISP,al:'center',a:c});
+  }}
+]},
+{title:'How a Computer Sees',scenes:[
+ {d:7,cap:"To you, this is a cat. To a computer, a picture is just a grid of tiny coloured squares called pixels.",
+  draw(p){
+   const cs=22,x0=(W-16*cs)/2,y0=95;
+   drawCat(x0,y0,cs,{grid:ease(seg(p,.35,.7))});
+   txt('This cat is 16 × 14 pixels. A phone photo has millions.',W/2,450,{s:20,al:'center',c:C.dim,a:ease(seg(p,.6,.8))});
+  }},
+ {d:9,cap:"Zoom in and every pixel is really a number for how bright it is. Zero is black, 255 is white. The computer never sees a cat, only numbers.",
+  draw(p){
+   const z=ease(seg(p,0,.45)); const cs=lerp(22,50,z);
+   const x0=W/2-8*cs, y0=H/2+5-7*cs;
+   drawCat(x0,y0,cs,{gray:ease(seg(p,.2,.45)),grid:1});
+   const na=ease(seg(p,.4,.65));
+   if(na>0){ for(let y=0;y<14;y++)for(let x=0;x<16;x++){const px=x0+x*cs+cs/2, py=y0+y*cs+cs/2; if(px<0||px>W||py<0||py>H)continue;
+     const g=gray(CATCOL[CAT[y][x]]); txt(String(g),px,py,{s:Math.round(cs*.36),f:MONO,al:'center',c:g>140?'#1a1e30':'#f4f4f8',a:na});}}
+   const bb=ease(seg(p,.6,.8));
+   alpha(bb,()=>{ctx.fillStyle='rgba(20,24,41,.92)'; rr(W/2-230,H-70,460,48,24); ctx.fill();
+     txt('0 = black  ·  255 = white',W/2,H-46,{s:20,w:700,f:MONO,al:'center',c:C.amber});});
+  }},
+ {d:8,cap:"Colour photos are three grids stacked together: one for red, one for green, one for blue. So each pixel is actually three numbers.",
+  draw(p){
+   const k=ease(seg(p,.05,.5)), cs=14, w=16*cs, h=14*cs;
+   const bx=W/2-w/2-90*k, by=H/2-h/2+45*k-10;
+   const names=[['Red',C.coral],['Green',C.green],['Blue','#6f9cf0']];
+   for(let i=2;i>=0;i--){const x=bx+i*90*k, y=by-i*45*k;
+     if(k<.05&&i>0)continue;
+     drawCat(x,y,cs,k<.05?{}:{channel:i});
+     if(k>.5) txt(names[i][0],x+w+10,y+12,{s:18,w:700,c:names[i][1],a:seg(k,.5,1)});}
+   txt('one orange pixel = (226, 138, 58)',W/2,H-40,{s:20,f:MONO,al:'center',c:C.amber,a:ease(seg(p,.65,.85))});
+  }},
+ {d:8,cap:"AlexNet looked at photos 224 pixels wide and 224 tall. That's 150,528 numbers going in, and it had to turn all of them into one answer.",
+  draw(p){
+   txt("AlexNet's input photo",W/2,100,{s:18,f:MONO,al:'center',c:C.dim,a:seg(p,0,.15)});
+   txt('224 × 224 × 3',W/2,190,{s:72,w:800,f:DISP,al:'center',a:ease(seg(p,.05,.25))});
+   const n=Math.round(150528*ease(seg(p,.25,.6)));
+   txt('= '+n.toLocaleString('en-US')+' numbers',W/2,285,{s:44,w:800,f:DISP,al:'center',c:C.amber,a:seg(p,.25,.35)});
+   const c=ease(seg(p,.65,.85));
+   arrow(W/2,322,W/2,372,C.dim,c);
+   txt('one answer: “tabby cat”',W/2,420,{s:32,w:700,al:'center',c:C.teal,a:c});
+  }}
+]},
+{title:'Filters',scenes:[
+ {d:9,cap:"AlexNet's secret weapon is the filter: a tiny 3-by-3 window of numbers that slides across the picture, looking for one pattern.",
+  draw(p){convScene(p*.5);}},
+ {d:9,cap:"At each spot it multiplies and adds. Where the pattern matches, like a dark-to-bright edge, the output lights up. The result is a map of where that pattern is.",
+  draw(p){convScene(.5+p*.5);}},
+ {d:9,cap:"AlexNet's first layer has 96 filters, and nobody designed them. It learned them by itself. Most turned into edge and colour detectors, a lot like cells in your own visual cortex.",
+  draw(p){
+   const sz=42,gap=6,cols=16,x0=(W-(cols*(sz+gap)-gap))/2,y0=78;
+   const n=96*ease(seg(p,0,.7));
+   FILT.forEach((f,i)=>{if(i>=n)return; const x=x0+(i%cols)*(sz+gap), y=y0+Math.floor(i/cols)*(sz+gap)+(i>=48?14:0);
+     ctx.imageSmoothingEnabled=true; ctx.drawImage(f,x,y,sz,sz);});
+   txt('Real AlexNet fact: the network was split over two graphics cards.',W/2,418,{s:17,al:'center',c:C.dim,a:ease(seg(p,.7,.85))});
+   txt('Card 1 learned mostly black-and-white edges. Card 2 learned colour.',W/2,450,{s:17,w:700,al:'center',c:C.amber,a:ease(seg(p,.78,.92))});
+  }},
+ {d:9,cap:"Then the deeper layers stack those patterns up: edges make shapes, shapes make parts like eyes and wheels, and parts make whole objects.",
+  draw(p){
+   const xs=[140,363,586,809], y=250, bw=180;
+   const lab=[['Edges','layer 1'],['Textures & shapes','layers 2–3'],['Parts','layers 4–5'],['Objects','final layers']];
+   xs.forEach((x,i)=>{const k=ease(seg(p,i*.18,i*.18+.2)); if(k<=0)return;
+     alpha(k,()=>{ctx.fillStyle=C.faint; rr(x-bw/2,y-bw/2,bw,bw,14); ctx.fill();
+       ctx.save(); ctx.beginPath(); ctx.rect(x-bw/2,y-bw/2,bw,bw); ctx.clip();
+       if(i===0){ctx.strokeStyle=C.ink; ctx.lineWidth=4; const r=rand(3); for(let j=0;j<9;j++){const a=r()*Math.PI, cx=x-55+(j%3)*55, cy=y-55+Math.floor(j/3)*55; ctx.beginPath(); ctx.moveTo(cx-18*Math.cos(a),cy-18*Math.sin(a)); ctx.lineTo(cx+18*Math.cos(a),cy+18*Math.sin(a)); ctx.stroke();}}
+       if(i===1){for(let a=0;a<4;a++)for(let b=0;b<4;b++){if((a+b)%2){ctx.fillStyle=C.teal; ctx.fillRect(x-75+a*18,y-75+b*18,18,18);}}
+         ctx.strokeStyle=C.amber; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(x+35,y+35,32,0,Math.PI*2); ctx.stroke();
+         ctx.beginPath(); ctx.moveTo(x-70,y+65); ctx.quadraticCurveTo(x-30,y+5,x+5,y+65); ctx.stroke();}
+       if(i===2){ctx.fillStyle=C.ink; ctx.beginPath(); ctx.ellipse(x-35,y-30,36,20,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle=C.green; ctx.beginPath(); ctx.arc(x-35,y-30,13,0,Math.PI*2); ctx.fill(); ctx.fillStyle=C.bg; ctx.beginPath(); ctx.arc(x-35,y-30,6,0,Math.PI*2); ctx.fill();
+         ctx.strokeStyle=C.ink; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(x+30,y+35,38,0,Math.PI*2); ctx.stroke(); ctx.lineWidth=3; for(let s=0;s<6;s++){const a=s*Math.PI/3; ctx.beginPath(); ctx.moveTo(x+30,y+35); ctx.lineTo(x+30+38*Math.cos(a),y+35+38*Math.sin(a)); ctx.stroke();}}
+       if(i===3){drawCat(x-64,y-56,8);}
+       ctx.restore();
+       txt(lab[i][0],x,y+bw/2+30,{s:19,w:700,al:'center'});
+       txt(lab[i][1],x,y+bw/2+56,{s:13,f:MONO,al:'center',c:C.dim});});
+     if(i<3) arrow(x+bw/2+6,y,x+bw/2+38,y,C.dim,ease(seg(p,i*.18+.15,i*.18+.25)),2);});
+  }}
+]},
+{title:'Inside the 8 Layers',scenes:[
+ {d:9,cap:"AlexNet has 8 learning layers in a row: 5 filter layers, called convolution layers, that find patterns, then 3 dense layers that weigh up the evidence and decide.",
+  draw(p){drawArch(p,0);}},
+ {d:9,cap:"As a photo flows through, its grid gets smaller but deeper: less about where things are, more about what they are. 224 by 224 shrinks down to 13 by 13, while 3 colour channels grow to 384 pattern channels.",
+  draw(p){drawArch(1,lerp(-.5,9,p));
+   txt('size shrinks  224 → 55 → 27 → 13',W/2,450,{s:16,f:MONO,al:'center',c:C.dim});
+   txt('depth grows  3 → 96 → 256 → 384',W/2,478,{s:16,f:MONO,al:'center',c:C.teal});}},
+ {d:8,cap:"The last layer gives a score to every one of the 1,000 categories. The five highest scores are its five guesses.",
+  draw(p){
+   drawCat(70,175,12);
+   arrow(275,259,345,259,C.dim,ease(seg(p,0,.15)));
+   txt('Top 5 of 1,000 scores',375,120,{s:18,w:700,c:C.dim,a:seg(p,0,.15)});
+   const rows=[['tabby cat',.72],['tiger cat',.17],['Egyptian cat',.06],['lynx',.02],['red fox',.01]];
+   rows.forEach((r,i)=>{const k=ease(seg(p,.1+i*.1,.35+i*.1)); const y=170+i*56;
+     txt(r[0],375,y,{s:20,w:i?400:700,c:i?C.ink:C.amber,a:seg(k,0,.3)});
+     ctx.fillStyle=i?C.faint:C.amber; rr(540,y-13,Math.max(2,330*r[1]*k),26,5); ctx.fill();
+     txt(Math.round(r[1]*100*k)+'%',548+330*r[1]*k,y,{s:16,f:MONO,c:C.dim,a:seg(k,.6,1)});});
+  }},
+ {d:8,cap:"Altogether AlexNet has about 60 million adjustable numbers, called parameters. Think of them as 60 million knobs. Far too many to set by hand, so the network has to learn them.",
+  draw(p){
+   const n=Math.round(60000000*ease(seg(p,0,.5)));
+   txt(n.toLocaleString('en-US'),W/2,200,{s:92,w:800,f:DISP,al:'center',c:C.amber});
+   txt('adjustable knobs (parameters)',W/2,272,{s:22,al:'center',c:C.dim});
+   txt('650,000 neurons',W/2,380,{s:44,w:800,f:DISP,al:'center',a:ease(seg(p,.55,.75))});
+   txt('all tuned by learning, none set by hand',W/2,430,{s:20,al:'center',c:C.teal,a:ease(seg(p,.7,.9))});
+  }}
+]},
+{title:'Learning from Mistakes',scenes:[
+ {d:8,cap:"Training starts with every knob set at random, so the first guesses are rubbish. Show it a Dalmatian and it might say volcano.",
+  draw(p){
+   const k1=ease(seg(p,0,.2));
+   alpha(k1,()=>{const x=90,y=190; ctx.fillStyle='#f4f2ee'; rr(x,y,190,160,40); ctx.fill();
+     ctx.fillStyle='#1d1d22'; ctx.beginPath(); ctx.ellipse(x+12,y+50,22,48,.2,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(x+178,y+50,22,48,-.2,0,Math.PI*2); ctx.fill();
+     const r=rand(11); for(let i=0;i<14;i++){ctx.beginPath(); ctx.arc(x+35+r()*120,y+20+r()*120,4+r()*7,0,Math.PI*2); ctx.fill();}
+     ctx.fillStyle='#1d1d22'; ctx.beginPath(); ctx.arc(x+65,y+70,9,0,Math.PI*2); ctx.arc(x+125,y+70,9,0,Math.PI*2); ctx.fill();
+     ctx.beginPath(); ctx.ellipse(x+95,y+112,16,11,0,0,Math.PI*2); ctx.fill();});
+   const k2=ease(seg(p,.2,.4));
+   arrow(300,270,360,270,C.dim,k2);
+   alpha(k2,()=>{ctx.fillStyle=C.faint; rr(370,205,190,130,14); ctx.fill(); txt('AlexNet',465,245,{s:24,w:800,f:DISP,al:'center'}); txt('knobs: random',465,285,{s:15,f:MONO,al:'center',c:C.dim});});
+   const k3=ease(seg(p,.4,.6));
+   arrow(570,270,630,270,C.dim,k3);
+   txt('Guess: volcano (31%)',645,240,{s:24,w:700,c:C.coral,a:k3});
+   alpha(ease(seg(p,.55,.7)),()=>{ctx.strokeStyle=C.coral; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(650,280); ctx.lineTo(690,320); ctx.moveTo(690,280); ctx.lineTo(650,320); ctx.stroke();});
+   txt('Answer: Dalmatian',645,370,{s:24,w:700,c:C.teal,a:ease(seg(p,.7,.85))});
+  }},
+ {d:9,cap:"After each guess it measures how wrong it was, then works backwards through the layers to figure out which knobs to blame. Every knob gets nudged a tiny bit in the helpful direction. This is called backpropagation.",
+  draw(p,t){
+   txt('error signal flows backwards',W/2,112,{s:18,w:700,al:'center',c:C.coral});
+   ctx.save(); ctx.setLineDash([14,10]); ctx.lineDashOffset=t*40; ctx.strokeStyle=C.coral; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(840,140); ctx.lineTo(130,140); ctx.stroke(); ctx.restore();
+   arrow(150,140,120,140,C.coral,1,3);
+   for(let r=0;r<3;r++)for(let c=0;c<9;c++){const x=160+c*80, y=210+r*82; const base=((c*7+r*13)%10)/10*Math.PI*1.6-Math.PI*.8;
+     const nudge=Math.sin(t*2.2+c*.6+r)*.18*seg(p,.15,.3)+(-.35*ease(seg(p,.2+(8-c)*.05,.35+(8-c)*.05)));
+     ctx.strokeStyle=C.dim; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,24,0,Math.PI*2); ctx.stroke();
+     const a=base+nudge-Math.PI/2; ctx.strokeStyle=C.amber; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+19*Math.cos(a),y+19*Math.sin(a)); ctx.stroke();
+     ctx.fillStyle=C.ink; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();}
+   txt('first layer',160,470,{s:14,f:MONO,al:'center',c:C.dim}); txt('output',800,470,{s:14,f:MONO,al:'center',c:C.dim});
+  }},
+ {d:9,cap:"Repeat that millions of times. AlexNet went through all 1.2 million photos about 90 times, and its mistakes kept falling.",
+  draw(p){
+   const x0=140,x1=860,y0=120,y1=420;
+   ctx.strokeStyle=C.faint; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0,y1); ctx.lineTo(x1,y1); ctx.stroke();
+   txt('how often it is wrong',x0,y0-22,{s:15,c:C.dim});
+   txt('passes through all 1.2M photos',x1,y1+32,{s:15,c:C.dim,al:'right'});
+   [0,30,60,90].forEach(e=>txt(String(e),x0+(x1-x0)*e/90,y1+16,{s:12,f:MONO,c:C.dim,al:'center'}));
+   const err=e=>.17+.8*Math.exp(-e/13)-(e>30?.03:0)-(e>60?.015:0);
+   const em=90*ease(seg(p,0,.85));
+   ctx.strokeStyle=C.amber; ctx.lineWidth=4; ctx.beginPath();
+   for(let e=0;e<=em;e+=.5){const x=x0+(x1-x0)*e/90, y=y1-(y1-y0)*err(e); e===0?ctx.moveTo(x,y):ctx.lineTo(x,y);} ctx.stroke();
+   const ex=x0+(x1-x0)*em/90, ey=y1-(y1-y0)*err(em); ctx.fillStyle=C.amber; ctx.beginPath(); ctx.arc(ex,ey,7,0,Math.PI*2); ctx.fill();
+   txt('pass '+Math.round(em)+' of 90',x1,y0,{s:22,w:800,f:DISP,al:'right'});
+  }},
+ {d:8,cap:"Trick one: ReLU. A ReLU neuron follows one rule. If its signal is negative, output zero; otherwise pass it on. So simple that AlexNet trained about six times faster than with older neurons.",
+  draw(p,t){
+   const ox=330,oy=330,s=130;
+   ctx.strokeStyle=C.faint; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(ox-s*1.4,oy); ctx.lineTo(ox+s*1.4,oy); ctx.moveTo(ox,oy+40); ctx.lineTo(ox,oy-s*1.6); ctx.stroke();
+   ctx.strokeStyle=C.amber; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(ox-s*1.3,oy); ctx.lineTo(ox,oy); ctx.lineTo(ox+s*1.3,oy-s*1.3); ctx.stroke();
+   const v=Math.sin(t*1.4)*1.2; const px=ox+v*s, py=oy-Math.max(0,v)*s;
+   ctx.fillStyle=C.ink; ctx.beginPath(); ctx.arc(px,py,9,0,Math.PI*2); ctx.fill();
+   txt('in',ox+s*1.4,oy+20,{s:13,f:MONO,c:C.dim,al:'right'}); txt('out',ox+8,oy-s*1.6,{s:13,f:MONO,c:C.dim});
+   txt('ReLU',600,170,{s:52,w:800,f:DISP,c:C.amber,a:ease(seg(p,0,.2))});
+   txt('negative → 0',600,240,{s:24,f:MONO,a:ease(seg(p,.15,.3))});
+   txt('positive → keep it',600,280,{s:24,f:MONO,a:ease(seg(p,.25,.4))});
+   txt('about 6× faster training',600,345,{s:20,w:700,c:C.teal,a:ease(seg(p,.45,.6))});
+  }},
+ {d:8,cap:"Trick two: dropout. On every training step, half the neurons in the dense layers are switched off at random. No neuron can be relied on, so the network learns sturdier patterns instead of memorising photos.",
+  draw(p,t){
+   const L=[4,6,6,3], xs=[200,400,600,780]; const tick=Math.floor(t/.7); const r=rand(tick*97+5);
+   const nodes=L.map((n,i)=>Array.from({length:n},(_,j)=>({x:xs[i],y:H/2+20+(j-(n-1)/2)*58,off:(i===1||i===2)&&r()<.5})));
+   ctx.lineWidth=1.5;
+   for(let i=0;i<3;i++)nodes[i].forEach(a=>nodes[i+1].forEach(b=>{if(a.off||b.off)return; ctx.strokeStyle='rgba(169,155,223,.35)'; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();}));
+   nodes.flat().forEach(n=>{ctx.beginPath(); ctx.arc(n.x,n.y,16,0,Math.PI*2); ctx.fillStyle=n.off?C.faint:C.lilac; ctx.fill();
+     if(n.off){ctx.strokeStyle=C.dim; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(n.x-7,n.y-7); ctx.lineTo(n.x+7,n.y+7); ctx.moveTo(n.x+7,n.y-7); ctx.lineTo(n.x-7,n.y+7); ctx.stroke();}});
+   txt('Dropout: half switched off, every step',W/2,82,{s:20,w:700,al:'center'});
+  }},
+ {d:8,cap:"Trick three: more practice photos for free. Each photo was flipped, cropped at random and colour-shifted, so one picture became thousands of slightly different ones.",
+  draw(p){
+   drawCat(60,190,10); txt('original',140,350,{s:15,f:MONO,al:'center',c:C.dim});
+   arrow(240,260,300,260,C.dim,ease(seg(p,.05,.15)));
+   const xs=[330,520,710], labs=['flipped','cropped','colour shifted'];
+   xs.forEach((x,i)=>{const k=ease(seg(p,.15+i*.15,.32+i*.15)); if(k<=0)return;
+     alpha(k,()=>{ctx.save(); ctx.beginPath(); ctx.rect(x,190,160,140); ctx.clip();
+       if(i===0) drawCat(x,190,10,{flip:true});
+       if(i===1) drawCat(x-40,170,14);
+       if(i===2) drawCat(x,190,10,{shift:[-50,10,60]});
+       ctx.restore(); txt(labs[i],x+80,350,{s:15,f:MONO,al:'center',c:C.dim});});});
+   txt('1 photo → 2,048 crops and flips',W/2,440,{s:30,w:800,f:DISP,al:'center',c:C.amber,a:ease(seg(p,.7,.85))});
+  }}
+]},
+{title:'Two Gaming Cards',scenes:[
+ {d:8,cap:"All this ran on two NVIDIA GTX 580s, graphics cards made for video games. They cost about 500 dollars each.",
+  draw(p,t){
+   txt('The hardware: two gaming graphics cards',W/2,96,{s:22,w:700,al:'center'});
+   [W/2-370,W/2+30].forEach((x,i)=>{const k=ease(seg(p,i*.2,.25+i*.2)); const y=170+(1-k)*20;
+     alpha(k,()=>{ctx.fillStyle='#2a2f48'; rr(x,y,340,140,12); ctx.fill(); ctx.fillStyle='#3a405f'; ctx.fillRect(x+20,y+140,180,14);
+       [x+95,x+245].forEach(fx=>{ctx.fillStyle='#10131f'; ctx.beginPath(); ctx.arc(fx,y+70,50,0,Math.PI*2); ctx.fill();
+         ctx.save(); ctx.translate(fx,y+70); ctx.rotate(t*6+i); ctx.fillStyle=C.dim; for(let b=0;b<7;b++){ctx.rotate(Math.PI*2/7); ctx.beginPath(); ctx.ellipse(22,0,20,7,.5,0,Math.PI*2); ctx.fill();} ctx.restore();
+         ctx.fillStyle=C.amber; ctx.beginPath(); ctx.arc(fx,y+70,8,0,Math.PI*2); ctx.fill();});
+       txt('GTX 580',x+170,y+186,{s:22,w:800,f:DISP,al:'center',c:i?C.teal:C.amber});
+       txt('3 GB memory · 512 cores',x+170,y+214,{s:14,f:MONO,al:'center',c:C.dim});});});
+   txt('about $500 each',W/2,470,{s:20,al:'center',c:C.dim,a:ease(seg(p,.6,.8))});
+  }},
+ {d:9,cap:"The network was too big for one card's 3 gigabytes of memory, so Alex split it in half: one half on each card. The two halves only talk to each other at a few layers.",
+  draw(p){
+   const rows=[[175,C.amber,'Card 1'],[365,C.teal,'Card 2']];
+   rows.forEach(([cy,col,name],ri)=>{const k=ease(seg(p,ri*.15,.3+ri*.15));
+     alpha(k,()=>{txt(name,40,cy,{s:16,w:700,c:col});
+       LAYERS.forEach((L,i)=>slab(LX[i]+60,cy,L.h,L.w,col,0,.5));});});
+   const cross=[3,6,7,8]; const kc=ease(seg(p,.45,.7));
+   alpha(kc,()=>{ctx.strokeStyle=C.coral; ctx.lineWidth=2.5;
+     cross.forEach(i=>{const a=LX[i-1]+60+14, b=LX[i]+60; ctx.beginPath(); ctx.moveTo(a,190); ctx.lineTo(b,350); ctx.moveTo(a,350); ctx.lineTo(b,190); ctx.stroke();});
+     txt('the halves swap notes only here',W/2,470,{s:18,w:700,al:'center',c:C.coral});});
+  }},
+ {d:8,cap:"Why gaming cards? A normal processor does a few sums at a time, one after another. A graphics card has hundreds of small cores doing sums all at once, which is exactly what a neural network needs.",
+  draw(p,t){
+   txt('Normal processor',230,110,{s:20,w:700,al:'center'});
+   txt('Graphics card',650,110,{s:20,w:700,al:'center'});
+   for(let i=0;i<4;i++){const on=Math.floor(t*4)%4===i; ctx.fillStyle=on?C.amber:C.faint; rr(150+i*42,220,32,32,6); ctx.fill();}
+   txt('a few cores, one sum at a time',230,300,{s:15,c:C.dim,al:'center'});
+   for(let i=0;i<512;i++){const cx=i%32, cy=Math.floor(i/32); const x=490+cx*10, y=160+cy*10; const wv=(Math.sin(t*5-cx*.25-cy*.25)+1)/2; ctx.fillStyle=wv>.5?C.teal:C.faint; ctx.fillRect(x,y,8,8);}
+   txt('512 cores, all at once',650,340,{s:15,c:C.dim,al:'center'});
+   const k=ease(seg(p,.4,.6));
+   txt('sums done:',W/2,420,{s:15,f:MONO,al:'center',c:C.dim,a:k});
+   txt((Math.round(t*40)).toLocaleString('en-US'),230,460,{s:30,w:800,f:DISP,al:'center',a:k});
+   txt((Math.round(t*5120)).toLocaleString('en-US'),650,460,{s:30,w:800,f:DISP,al:'center',c:C.teal,a:k});
+  }},
+ {d:8,cap:"Training took five to six days, famously on a computer in Alex's bedroom at his parents' house.",
+  draw(p){
+   const d=ease(seg(p,0,.75))*6;
+   for(let i=0;i<6;i++){const x=W/2-330+i*112, y=170; const on=d>i; const part=clamp(d-i);
+     ctx.fillStyle=C.faint; rr(x,y,92,110,10); ctx.fill();
+     ctx.fillStyle=on?C.amber:'#3a405f'; ctx.fillRect(x,y,92*part||0,26);
+     txt('DAY',x+46,y+13,{s:11,f:MONO,al:'center',c:C.bg});
+     txt(String(i+1),x+46,y+70,{s:40,w:800,f:DISP,al:'center',c:on?C.ink:C.dim});}
+   txt('5–6 days · 2 gaming cards · 1 bedroom',W/2,380,{s:30,w:800,f:DISP,al:'center',a:ease(seg(p,.7,.85))});
+  }},
+ {d:11,cap:"The same recipe of big neural networks, lots of data and graphics chips now powers almost all modern AI, including the chatbots you use today.",
+  draw(p){
+   const ev=[['2012','AlexNet wins','ImageNet'],['2013','Google buys their','3-person startup'],['2015','Ilya co-founds','OpenAI'],['2022','ChatGPT','launches'],['2024','Hinton shares the','Nobel Prize in Physics']];
+   const y=275, xs=[120,300,480,660,840];
+   ctx.strokeStyle=C.faint; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(80,y); ctx.lineTo(80+(800)*ease(seg(p,0,.2)),y); ctx.stroke();
+   ev.forEach((e,i)=>{const k=ease(seg(p,.12+i*.14,.28+i*.14)); if(k<=0)return; const up=i%2===0, x=xs[i];
+     alpha(k,()=>{ctx.fillStyle=i===0?C.amber:C.teal; ctx.beginPath(); ctx.arc(x,y,10,0,Math.PI*2); ctx.fill();
+       const ty=up?y-110:y+60;
+       txt(e[0],x,ty,{s:26,w:800,f:DISP,al:'center',c:i===0?C.amber:C.ink});
+       txt(e[1],x,ty+30,{s:15,al:'center',c:C.dim}); txt(e[2],x,ty+50,{s:15,al:'center',c:C.dim});
+       ctx.strokeStyle=C.faint; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x,up?y-14:y+14); ctx.lineTo(x,up?y-40:y+40); ctx.stroke();});});
+  }}
+]}
+];
+
+function convScene(q){
+  const cs=18, ix=56, iy=150, ox0=622, oy0=168;
+  txt('Picture (brightness)',ix+144,118,{s:16,w:700,al:'center'});
+  txt('Output: where the edges are',ox0+126,118,{s:16,w:700,al:'center',c:C.amber});
+  for(let y=0;y<14;y++)for(let x=0;x<16;x++){const g=Math.round(GI[y][x]*255); ctx.fillStyle=`rgb(${g},${g},${g+6})`; ctx.fillRect(ix+x*cs,iy+y*cs,cs-1,cs-1);}
+  const k=Math.min(167,Math.floor(q*168)); const ox=k%14, oy=Math.floor(k/14);
+  for(let i=0;i<168;i++){const x=ox0+(i%14)*cs, y=oy0+Math.floor(i/14)*cs;
+    if(i<=k){const v=OUT[i]/OMAX; ctx.fillStyle=`rgba(242,165,65,${.08+.92*v})`;} else ctx.fillStyle=C.grid;
+    ctx.fillRect(x,y,cs-1,cs-1);}
+  const fx=420, fy=205, fc=40;
+  txt('Filter',fx+60,178,{s:16,w:700,al:'center'});
+  for(let j=0;j<3;j++)for(let i=0;i<3;i++){const v=KER[j][i]; ctx.fillStyle=C.faint; ctx.fillRect(fx+i*fc,fy+j*fc,fc-3,fc-3);
+    txt(String(v),fx+i*fc+fc/2-1,fy+j*fc+fc/2-1,{s:18,w:700,f:MONO,al:'center',c:v<0?C.coral:v>0?C.teal:C.dim});}
+  txt('dark on the left,',fx+60,fy+150,{s:14,al:'center',c:C.dim});
+  txt('bright on the right?',fx+60,fy+170,{s:14,al:'center',c:C.dim});
+  const wx=ix+ox*cs, wy=iy+oy*cs;
+  ctx.strokeStyle=C.amber; ctx.lineWidth=3; ctx.strokeRect(wx-1,wy-1,cs*3,cs*3);
+  const cx=ox0+ox*cs, cy=oy0+oy*cs; ctx.strokeRect(cx-1,cy-1,cs+1,cs+1);
+  ctx.save(); ctx.setLineDash([4,5]); ctx.strokeStyle=C.dim; ctx.lineWidth=1.5; ctx.beginPath();
+  ctx.moveTo(wx+cs*3,wy+cs*1.5); ctx.lineTo(fx-4,fy+60); ctx.moveTo(fx+124,fy+60); ctx.lineTo(cx,cy+cs/2); ctx.stroke(); ctx.restore();
+}
+
+/* ---------- player ---------- */
+let ep=0, sc=0, t=0, playing=false, narr=false, speaking=false, hold=0, ended=false, fresh=true;
+const $=id=>document.getElementById(id);
+const capEl=$('caption'), segEl=$('segbar'), statusEl=$('status'), bigplay=$('bigplay'), epsEl=$('eps');
+const fmt=s=>Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
+EPS.forEach((e,i)=>{const b=document.createElement('button'); b.className='ep'; b.type='button';
+  const dur=e.scenes.reduce((a,s)=>a+s.d,0);
+  b.innerHTML=`<span class="n">EPISODE ${i+1} · ${fmt(dur)}</span><span class="t">${e.title}</span>`;
+  b.addEventListener('click',()=>loadEp(i,true)); epsEl.appendChild(b);});
+function buildSeg(){segEl.innerHTML=''; EPS[ep].scenes.forEach((s,i)=>{const b=document.createElement('button'); b.type='button'; b.style.flex=s.d; b.setAttribute('aria-label','Scene '+(i+1)); b.innerHTML='<i></i>'; b.addEventListener('click',()=>{fresh=false; ended=false; setScene(i);}); segEl.appendChild(b);});}
+const cur=()=>EPS[ep].scenes[sc];
+function speak(){ if(!narr||!('speechSynthesis' in window))return; try{speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(cur().cap); u.rate=1; u.lang='en-GB'; speaking=true; u.onend=u.onerror=()=>{speaking=false;}; speechSynthesis.speak(u);}catch(e){speaking=false;} }
+function hush(){speaking=false; try{if('speechSynthesis' in window) speechSynthesis.cancel();}catch(e){}}
+function setScene(i){sc=i; t=0; hold=0; ui(); if(playing) speak(); else hush();}
+function loadEp(i,auto){ep=i; ended=false; fresh=!auto; playing=!!auto; buildSeg(); setScene(0);}
+function play(){if(ended){loadEp(ep<EPS.length-1?ep+1:0,true); return;} if(fresh){fresh=false; t=0;} playing=true; ui(); speak();}
+function pause(){playing=false; hush(); ui();}
+function ui(){
+  capEl.textContent=cur().cap;
+  [...epsEl.children].forEach((b,i)=>b.setAttribute('aria-current',i===ep?'true':'false'));
+  statusEl.textContent=`Episode ${ep+1} of ${EPS.length} · Scene ${sc+1} of ${EPS[ep].scenes.length}`;
+  $('playicon').innerHTML=playing?'<path d="M3 2h4v12H3zM9 2h4v12H9z"/>':'<path d="M4 2l10 6-10 6z"/>';
+  $('play').setAttribute('aria-label',playing?'Pause':'Play');
+  bigplay.hidden=playing;
+  bigplay.querySelector('span').textContent=ended?(ep<EPS.length-1?`Next: Episode ${ep+2}, ${EPS[ep+1].title}`:'Watch again from Episode 1'):(fresh&&sc===0?`Play episode ${ep+1}`:'Resume');
+}
+function progress(){const p=fresh?0:clamp(t/cur().d); [...segEl.children].forEach((b,i)=>{b.firstChild.style.width=(i<sc?100:i===sc?p*100:0)+'%';});}
+function render(tt){ctx.fillStyle=C.bg; ctx.fillRect(0,0,W,H);
+  const s=cur(); const p=fresh?1:clamp(t/s.d);
+  ctx.save(); s.draw(p,fresh?s.d:tt); ctx.restore();
+  txt(`EP ${ep+1} · ${EPS[ep].title.toUpperCase()}`,24,26,{s:12,f:MONO,c:C.dim});}
+let last=performance.now();
+function frame(now){const dt=Math.min(.1,(now-last)/1000); last=now;
+  if(playing){t+=dt; const s=cur(); if(t>=s.d){ if(narr&&speaking&&hold<12){hold+=dt; t=s.d;} else if(sc<EPS[ep].scenes.length-1){setScene(sc+1);} else {t=s.d; playing=false; ended=true; hush(); ui();} } }
+  render(t); progress(); requestAnimationFrame(frame);}
+$('play').addEventListener('click',()=>playing?pause():play());
+bigplay.addEventListener('click',play);
+$('next').addEventListener('click',()=>{fresh=false; if(sc<EPS[ep].scenes.length-1){ended=false; setScene(sc+1);} else if(ep<EPS.length-1) loadEp(ep+1,playing);});
+$('prev').addEventListener('click',()=>{fresh=false; ended=false; if(t>1.5||sc===0) setScene(sc); else setScene(sc-1);});
+$('restart').addEventListener('click',()=>{loadEp(ep,true);});
+$('narr').addEventListener('click',()=>{narr=!narr; $('narr').setAttribute('aria-pressed',String(narr)); if(narr&&playing) speak(); else hush();});
+document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('button'))return; if(e.code==='Space'){e.preventDefault(); playing?pause():play();} if(e.key==='ArrowRight') $('next').click(); if(e.key==='ArrowLeft') $('prev').click();});
+buildSeg(); ui();
+requestAnimationFrame(frame);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>render(t));
+})();
+</script>
+<script>
+(function(){
+  const KW=/\b(import|from|as|def|class|return|for|in|if|else|with|not|and|or|is|None|True|False|lambda|try|except)\b/g;
+  document.querySelectorAll('.code code').forEach(el=>{
+    const raw=el.textContent;
+    const out=raw.split('\n').map(line=>{
+      let code=line, cm='';
+      const m=line.match(/^((?:[^#"']|"[^"]*"|'[^']*')*)(#.*)$/);
+      if(m){code=m[1]; cm=m[2];}
+      const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      let h=esc(code).replace(/(f?"[^"]*"|f?'[^']*')/g,'\u0001$1\u0002');
+      h=h.split(/(\u0001[^\u0002]*\u0002)/).map(p=>p.startsWith('\u0001')?'<span class="st">'+p.slice(1,-1)+'</span>':p.replace(KW,'<span class="kw">$1</span>')).join('');
+      return h+(cm?'<span class="cm">'+esc(cm)+'</span>':'');
+    }).join('\n');
+    el.innerHTML=out;
+  });
+  document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',()=>{
+    const code=b.closest('.code').querySelector('code');
+    const done=()=>{b.textContent='Copied'; setTimeout(()=>b.textContent='Copy',1500);};
+    const fallback=()=>{const r=document.createRange(); r.selectNodeContents(code); const s=getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent='Selected, press Ctrl+C';};
+    try{navigator.clipboard.writeText(code.textContent).then(done,fallback);}catch(e){fallback();}
+  }));
+  const eps=document.getElementById('eps');
+  if(eps){const a=document.createElement('a'); a.className='ep ep7'; a.href='#build'; a.innerHTML='<span class="n">EPISODE 7 · HANDS-ON</span><span class="t">Build It Yourself</span>'; eps.appendChild(a);}
+})();
+</script>
+
+</body>
+</html>
